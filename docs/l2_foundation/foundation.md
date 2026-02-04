@@ -19,6 +19,7 @@ status: done
 | shadcn/ui | - | Radix UI + Tailwind。コピペ導入、カスタマイズ自由 |
 | lucide-react | latest | 軽量アイコンライブラリ。shadcn/uiと相性良い |
 | clsx + tailwind-merge | latest | 条件付きクラス名結合。shadcn/ui標準 |
+| i18next + react-i18next | latest | アイテム名・設備名の翻訳表示。endfield-calcの翻訳データを流用 |
 | Node.js | 20.x LTS | 実行環境。.nvmrcで固定 |
 
 ### 1.2 スタイリング
@@ -119,9 +120,15 @@ endfield-reverse/
 │   ├── hooks/                 # カスタムフック
 │   ├── store/                 # Zustand store
 │   │   └── useCalculatorStore.ts
+│   ├── locales/              # 翻訳データ（endfield-calcから流用）
+│   │   └── ja/
+│   ├── i18n.ts               # i18next設定
 │   ├── App.tsx
 │   └── main.tsx
 ├── public/
+│   └── images/               # アイコン画像（endfield-calcから流用）
+│       ├── items/
+│       └── facilities/
 ├── index.html
 ├── package.json
 ├── tsconfig.json
@@ -193,8 +200,3 @@ endfield-reverse/
 | React Context | 計算→再計算の連鎖的な状態更新でZustandの方がシンプルに書ける |
 | Jotai | 複雑な依存関係がないため、Zustandで十分 |
 
-### 5.4 国際化
-
-| 選択肢 | 不採用理由 |
-|--------|-----------|
-| i18next | 日本語のみ対応のためMVPでは不要。将来的に追加可能 |

@@ -22,6 +22,7 @@ pnpm preview  # プロダクションビルドのプレビュー
 - **Build**: Vite 7
 - **State**: Zustand
 - **Styling**: Tailwind CSS 4 + shadcn/ui (new-york style)
+- **i18n**: i18next + react-i18next
 - **Icons**: lucide-react
 - **Package Manager**: pnpm
 
@@ -29,18 +30,28 @@ pnpm preview  # プロダクションビルドのプレビュー
 
 ```
 src/
-├── data/          # ゲームデータ（endfield-calcから流用予定）
+├── data/          # ゲームデータ（endfield-calcから流用）
 │   ├── recipes.ts
 │   ├── items.ts
 │   └── facilities.ts
 ├── types/         # 型定義
+│   ├── constants.ts  # ItemId, RecipeId, FacilityId
+│   └── index.ts      # Item, Recipe, Facility
 ├── lib/           # 計算ロジック
 │   └── utils.ts   # shadcn/ui用cn()関数
 ├── components/    # UIコンポーネント（フラット構成）
 │   └── ui/        # shadcn/uiコンポーネント
 ├── hooks/         # カスタムフック
 ├── store/         # Zustand store
+├── locales/       # 翻訳データ（endfield-calcから流用）
+│   └── ja/
+├── i18n.ts        # i18next設定
 └── App.tsx
+
+public/
+└── images/        # アイコン画像（endfield-calcから流用）
+    ├── items/
+    └── facilities/
 ```
 
 **データフロー**: 鉱石レート入力 → Calculator Engine → 作成可能アイテム表示 → ユーザー選択 → 残りリソース再計算 → 生産計画出力
@@ -57,7 +68,7 @@ src/
 
 ## Data Source
 
-ゲームデータは [JamboChen/endfield-calc](https://github.com/JamboChen/endfield-calc)（MITライセンス）から流用。流用時はライセンス表記を維持すること。
+ゲームデータ・画像・翻訳は [JamboChen/endfield-calc](https://github.com/JamboChen/endfield-calc)（MITライセンス）から流用済み。ライセンス表記は `THIRD_PARTY_LICENSES.md` に記載。
 
 ## Tri-SSD Documentation
 
