@@ -14,6 +14,12 @@ status: done
 | TypeScript | 5.x | 型安全性確保。レシピ・アイテムデータの複雑な型を明示的に管理 |
 | Vite | 5.x | 高速なHMR、シンプルな設定、React公式推奨 |
 | Zustand | 4.x | 軽量（3KB）、ボイラープレートなし、状態管理がシンプル |
+| pnpm | 9.x | データソースと同一。ディスク効率が良い |
+| ESLint | 9.x | コード品質チェック + Prettier統合（eslint-plugin-prettier） |
+| shadcn/ui | - | Radix UI + Tailwind。コピペ導入、カスタマイズ自由 |
+| lucide-react | latest | 軽量アイコンライブラリ。shadcn/uiと相性良い |
+| clsx + tailwind-merge | latest | 条件付きクラス名結合。shadcn/ui標準 |
+| Node.js | 20.x LTS | 実行環境。.nvmrcで固定 |
 
 ### 1.2 スタイリング
 
@@ -186,3 +192,9 @@ endfield-reverse/
 | Redux | 小規模アプリには過剰 |
 | React Context | 計算→再計算の連鎖的な状態更新でZustandの方がシンプルに書ける |
 | Jotai | 複雑な依存関係がないため、Zustandで十分 |
+
+### 5.4 国際化
+
+| 選択肢 | 不採用理由 |
+|--------|-----------|
+| i18next | 日本語のみ対応のためMVPでは不要。将来的に追加可能 |
