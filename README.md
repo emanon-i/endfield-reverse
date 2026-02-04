@@ -54,6 +54,15 @@ pnpm lint
 - [EndfieldTools](https://endfieldtools.dev/factory-planner/)
 - [AKEF-AIC-Calculator](https://micro215.github.io/AKEF-AIC-Calculator/)
 
+## Disclaimer
+
+本ツールは非公式のファンメイドツール（二次創作）です。
+
+**アークナイツ：エンドフィールド** © Hypergryph / Gryphline
+
+- [公式サイト](https://endfield.hypergryph.com/)
+- [公式X（Twitter）](https://twitter.com/ArknightsEF)
+
 ## License
 
 MIT
