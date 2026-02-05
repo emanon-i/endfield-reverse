@@ -3,8 +3,10 @@ import {
   getDirectRecipesFromOre,
   calculateMaxProduction,
   calculateAvailableItems,
+  calculateRemainingOreRates,
+  calculateAvailableItemsWithConsumption,
 } from '@/lib/calculator'
-import { ItemId } from '@/types/constants'
+import { ItemId, RecipeId } from '@/types/constants'
 import { OreType, type OreRates } from '@/store/useOreRateStore'
 
 describe('calculator', () => {
@@ -170,6 +172,134 @@ describe('calculator', () => {
       items.forEach((item) => {
         expect(item.recipeId).toBeDefined()
       })
+    })
+  })
+
+  describe('calculateRemainingOreRates', () => {
+    it('消費量を差し引いた残り鉱石レートを計算できる', () => {
+      const oreRates: OreRates = {
+        [OreType.ORIGINIUM]: 10,
+        [OreType.QUARTZ]: 5,
+        [OreType.IRON]: 8,
+      }
+
+      const consumption = {
+        [ItemId.ITEM_ORIGINIUM_ORE]: 3,
+        [ItemId.ITEM_QUARTZ_SAND]: 2,
+      }
+
+      const remaining = calculateRemainingOreRates(oreRates, consumption)
+
+      expect(remaining[OreType.ORIGINIUM]).toBe(7)
+      expect(remaining[OreType.QUARTZ]).toBe(3)
+      expect(remaining[OreType.IRON]).toBe(8) // 消費なし
+    })
+
+    it('消費量が元のレートを超える場合は0になる', () => {
+      const oreRates: OreRates = {
+        [OreType.ORIGINIUM]: 5,
+        [OreType.QUARTZ]: 0,
+        [OreType.IRON]: 0,
+      }
+
+      const consumption = {
+        [ItemId.ITEM_ORIGINIUM_ORE]: 10,
+      }
+
+      const remaining = calculateRemainingOreRates(oreRates, consumption)
+
+      expect(remaining[OreType.ORIGINIUM]).toBe(0)
+    })
+
+    it('空の消費量の場合は元のレートがそのまま返る', () => {
+      const oreRates: OreRates = {
+        [OreType.ORIGINIUM]: 10,
+        [OreType.QUARTZ]: 5,
+        [OreType.IRON]: 8,
+      }
+
+      const remaining = calculateRemainingOreRates(oreRates, {})
+
+      expect(remaining[OreType.ORIGINIUM]).toBe(10)
+      expect(remaining[OreType.QUARTZ]).toBe(5)
+      expect(remaining[OreType.IRON]).toBe(8)
+    })
+  })
+
+  describe('calculateAvailableItemsWithConsumption', () => {
+    it('消費量を考慮した作成可能アイテム一覧を算出できる', () => {
+      const oreRates: OreRates = {
+        [OreType.ORIGINIUM]: 10,
+        [OreType.QUARTZ]: 0,
+        [OreType.IRON]: 0,
+      }
+
+      // 源石鉱を5個/分消費
+      const consumption = {
+        [ItemId.ITEM_ORIGINIUM_ORE]: 5,
+      }
+
+      const items = calculateAvailableItemsWithConsumption(
+        oreRates,
+        consumption,
+        new Set()
+      )
+
+      // 残り5個/分で計算される
+      const crystalShell = items.find(
+        (i) => i.itemId === ItemId.ITEM_CRYSTAL_SHELL
+      )
+      expect(crystalShell).toBeDefined()
+      expect(crystalShell!.maxRate).toBe(5)
+    })
+
+    it('選択済みレシピは除外される', () => {
+      const oreRates: OreRates = {
+        [OreType.ORIGINIUM]: 10,
+        [OreType.QUARTZ]: 0,
+        [OreType.IRON]: 0,
+      }
+
+      const selectedRecipeIds = new Set([RecipeId.FURNANCE_CRYSTAL_SHELL_1])
+
+      const items = calculateAvailableItemsWithConsumption(
+        oreRates,
+        {},
+        selectedRecipeIds
+      )
+
+      // 結晶殻のレシピは除外されている
+      const crystalShell = items.find(
+        (i) => i.recipeId === RecipeId.FURNANCE_CRYSTAL_SHELL_1
+      )
+      expect(crystalShell).toBeUndefined()
+
+      // 源石粉は含まれている
+      const originiumPowder = items.find(
+        (i) => i.itemId === ItemId.ITEM_ORIGINIUM_POWDER
+      )
+      expect(originiumPowder).toBeDefined()
+    })
+
+    it('残りリソースが0の場合は空配列を返す', () => {
+      const oreRates: OreRates = {
+        [OreType.ORIGINIUM]: 10,
+        [OreType.QUARTZ]: 0,
+        [OreType.IRON]: 0,
+      }
+
+      // 全ての源石鉱を消費
+      const consumption = {
+        [ItemId.ITEM_ORIGINIUM_ORE]: 10,
+      }
+
+      const items = calculateAvailableItemsWithConsumption(
+        oreRates,
+        consumption,
+        new Set()
+      )
+
+      expect(items).toEqual([])
     })
   })
 })

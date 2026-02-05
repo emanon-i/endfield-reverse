@@ -79,3 +79,43 @@ export function calculateAvailableItems(oreRates: OreRates): AvailableItem[] {
 
   return availableItems
 }
+
+/**
+ * 残り鉱石レートを計算（元のレートから消費分を引く）
+ * @param oreRates 元の鉱石レート
+ * @param consumption 鉱石消費量（個/分）
+ * @returns 残り鉱石レート
+ */
+export function calculateRemainingOreRates(
+  oreRates: OreRates,
+  consumption: Partial<Record<ItemId, number>>
+): OreRates {
+  const remaining = { ...oreRates }
+
+  for (const [itemId, consumedRate] of Object.entries(consumption)) {
+    const oreType = itemId as keyof OreRates
+    if (oreType in remaining) {
+      remaining[oreType] = Math.max(0, remaining[oreType] - (consumedRate ?? 0))
+    }
+  }
+
+  return remaining
+}
+
+/**
+ * 残り鉱石レートから作成可能なアイテム一覧を算出（選択中のアイテムを考慮）
+ * @param oreRates 元の鉱石レート
+ * @param consumption 既に選択された生産による鉱石消費量
+ * @param selectedRecipeIds 既に選択されているレシピID（除外用）
+ */
+export function calculateAvailableItemsWithConsumption(
+  oreRates: OreRates,
+  consumption: Partial<Record<ItemId, number>>,
+  selectedRecipeIds: Set<RecipeId>
+): AvailableItem[] {
+  const remainingOreRates = calculateRemainingOreRates(oreRates, consumption)
+  const availableItems = calculateAvailableItems(remainingOreRates)
+
+  // 既に選択されているレシピは除外
+  return availableItems.filter((item) => !selectedRecipeIds.has(item.recipeId))
+}
