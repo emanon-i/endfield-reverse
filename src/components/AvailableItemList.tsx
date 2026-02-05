@@ -6,7 +6,10 @@ import {
   useProductionStore,
   calculateOreConsumption,
 } from '@/store/useProductionStore'
-import { calculateAvailableItemsWithConsumption } from '@/lib/calculator'
+import {
+  calculateAvailableItemsWithConsumption,
+  calculateMaxRateForSelectedItem,
+} from '@/lib/calculator'
 import { Input } from '@/components/ui/input'
 import type { RecipeId, ItemId } from '@/types'
 
@@ -27,6 +30,23 @@ export function AvailableItemList() {
     () => calculateOreConsumption(selectedProductions),
     [selectedProductions]
   )
+
+  // 各選択済みアイテムの最大生産可能量を計算（他アイテムの消費を考慮）
+  const maxRatesForSelected = useMemo(() => {
+    const result: Partial<Record<RecipeId, number>> = {}
+    for (const production of selectedProductions) {
+      // このアイテム以外の消費量を計算
+      const othersConsumption = calculateOreConsumption(
+        selectedProductions.filter((p) => p.recipeId !== production.recipeId)
+      )
+      result[production.recipeId] = calculateMaxRateForSelectedItem(
+        production.recipeId,
+        oreRates,
+        othersConsumption
+      )
+    }
+    return result
+  }, [selectedProductions, oreRates])
 
   // 選択済みレシピIDのSet
   const selectedRecipeIds = useMemo(
@@ -56,7 +76,9 @@ export function AvailableItemList() {
 
   const handleRateChange = (recipeId: RecipeId, value: string) => {
     const rate = parseInt(value, 10) || 0
-    updateProductionRate(recipeId, rate)
+    const maxRate = maxRatesForSelected[recipeId] ?? 0
+    const clampedRate = Math.min(Math.max(0, rate), Math.floor(maxRate))
+    updateProductionRate(recipeId, clampedRate)
   }
 
   const handleRemove = (recipeId: RecipeId) => {
@@ -111,6 +133,9 @@ export function AvailableItemList() {
                       <Input
                         type="number"
                         min={0}
+                        max={Math.floor(
+                          maxRatesForSelected[production.recipeId] ?? 0
+                        )}
                         step={1}
                         value={production.rate}
                         onChange={(e) =>
@@ -119,7 +144,7 @@ export function AvailableItemList() {
                         className="w-20 h-7 text-sm"
                       />
                       <span className="text-sm text-muted-foreground">
-                        個/分
+                        / {Math.floor(maxRatesForSelected[production.recipeId] ?? 0)} 個/分
                       </span>
                     </div>
                   </div>

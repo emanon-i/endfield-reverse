@@ -5,8 +5,12 @@ import {
   calculateAvailableItems,
   calculateRemainingOreRates,
   calculateAvailableItemsWithConsumption,
+  calculateProductionPerFacility,
+  calculateRequiredFacilityCount,
+  calculateFacilityRequirements,
+  calculateFacilitySummary,
 } from '@/lib/calculator'
-import { ItemId, RecipeId } from '@/types/constants'
+import { ItemId, RecipeId, FacilityId } from '@/types/constants'
 import { OreType, type OreRates } from '@/store/useOreRateStore'
 
 describe('calculator', () => {
@@ -300,6 +304,176 @@ describe('calculator', () => {
       )
 
       expect(items).toEqual([])
+    })
+  })
+
+  describe('calculateProductionPerFacility', () => {
+    it('1台の設備が1分間に生産できる量を計算できる', () => {
+      // 2秒のクラフト時間、1個出力
+      // 60秒 / 2秒 = 30回/分 × 1個 = 30個/分
+      const result = calculateProductionPerFacility(2, 1)
+      expect(result).toBe(30)
+    })
+
+    it('出力量が2個の場合は生産量が2倍になる', () => {
+      // 2秒のクラフト時間、2個出力
+      // 30回/分 × 2個 = 60個/分
+      const result = calculateProductionPerFacility(2, 2)
+      expect(result).toBe(60)
+    })
+
+    it('クラフト時間が長いほど生産量が減る', () => {
+      // 4秒のクラフト時間、1個出力
+      // 60秒 / 4秒 = 15回/分 × 1個 = 15個/分
+      const result = calculateProductionPerFacility(4, 1)
+      expect(result).toBe(15)
+    })
+  })
+
+  describe('calculateRequiredFacilityCount', () => {
+    it('必要な設備台数を計算できる', () => {
+      // 希望生産量 30個/分、2秒クラフト、1個出力
+      // 1台で30個/分生産可能 → 1台必要
+      const result = calculateRequiredFacilityCount(30, 2, 1)
+      expect(result).toBe(1)
+    })
+
+    it('生産量が1台の能力を超える場合は切り上げ', () => {
+      // 希望生産量 31個/分、2秒クラフト、1個出力
+      // 1台で30個/分生産可能 → 2台必要
+      const result = calculateRequiredFacilityCount(31, 2, 1)
+      expect(result).toBe(2)
+    })
+
+    it('生産量が0の場合は0台', () => {
+      const result = calculateRequiredFacilityCount(0, 2, 1)
+      expect(result).toBe(0)
+    })
+
+    it('生産量がちょうど2台分の場合は2台', () => {
+      // 希望生産量 60個/分、2秒クラフト、1個出力
+      // 1台で30個/分生産可能 → 2台必要
+      const result = calculateRequiredFacilityCount(60, 2, 1)
+      expect(result).toBe(2)
+    })
+  })
+
+  describe('calculateFacilityRequirements', () => {
+    it('選択された生産リストから設備要件を算出できる', () => {
+      // 結晶殻: 源石鉱→結晶殻, craftingTime=2, facilityId=ITEM_PORT_FURNANCE_1
+      const selectedProductions = [
+        {
+          recipeId: RecipeId.FURNANCE_CRYSTAL_SHELL_1,
+          itemId: ItemId.ITEM_CRYSTAL_SHELL,
+          rate: 30,
+        },
+      ]
+
+      const requirements = calculateFacilityRequirements(selectedProductions)
+
+      expect(requirements).toHaveLength(1)
+      expect(requirements[0].facilityId).toBe(FacilityId.ITEM_PORT_FURNANCE_1)
+      expect(requirements[0].itemId).toBe(ItemId.ITEM_CRYSTAL_SHELL)
+      expect(requirements[0].rate).toBe(30)
+      expect(requirements[0].requiredCount).toBe(1)
+    })
+
+    it('rate=0の生産はフィルタされる', () => {
+      const selectedProductions = [
+        {
+          recipeId: RecipeId.FURNANCE_CRYSTAL_SHELL_1,
+          itemId: ItemId.ITEM_CRYSTAL_SHELL,
+          rate: 0,
+        },
+      ]
+
+      const requirements = calculateFacilityRequirements(selectedProductions)
+
+      expect(requirements).toHaveLength(0)
+    })
+
+    it('複数の生産がある場合は全て算出される', () => {
+      const selectedProductions = [
+        {
+          recipeId: RecipeId.FURNANCE_CRYSTAL_SHELL_1,
+          itemId: ItemId.ITEM_CRYSTAL_SHELL,
+          rate: 30,
+        },
+        {
+          recipeId: RecipeId.FURNANCE_QUARTZ_GLASS_1,
+          itemId: ItemId.ITEM_QUARTZ_GLASS,
+          rate: 30,
+        },
+      ]
+
+      const requirements = calculateFacilityRequirements(selectedProductions)
+
+      expect(requirements).toHaveLength(2)
+    })
+  })
+
+  describe('calculateFacilitySummary', () => {
+    it('設備ごとの合計台数を算出できる', () => {
+      const requirements = [
+        {
+          facilityId: FacilityId.ITEM_PORT_FURNANCE_1,
+          recipeId: RecipeId.FURNANCE_CRYSTAL_SHELL_1,
+          itemId: ItemId.ITEM_CRYSTAL_SHELL,
+          rate: 30,
+          requiredCount: 1,
+        },
+        {
+          facilityId: FacilityId.ITEM_PORT_FURNANCE_1,
+          recipeId: RecipeId.FURNANCE_QUARTZ_GLASS_1,
+          itemId: ItemId.ITEM_QUARTZ_GLASS,
+          rate: 30,
+          requiredCount: 2,
+        },
+      ]
+
+      const summary = calculateFacilitySummary(requirements)
+
+      expect(summary).toHaveLength(1)
+      expect(summary[0].facilityId).toBe(FacilityId.ITEM_PORT_FURNANCE_1)
+      expect(summary[0].totalCount).toBe(3) // 1 + 2
+    })
+
+    it('異なる設備は別々に集計される', () => {
+      const requirements = [
+        {
+          facilityId: FacilityId.ITEM_PORT_FURNANCE_1,
+          recipeId: RecipeId.FURNANCE_CRYSTAL_SHELL_1,
+          itemId: ItemId.ITEM_CRYSTAL_SHELL,
+          rate: 30,
+          requiredCount: 1,
+        },
+        {
+          facilityId: FacilityId.ITEM_PORT_GRINDER_1,
+          recipeId: RecipeId.GRINDER_ORIGINIUM_POWDER_1,
+          itemId: ItemId.ITEM_ORIGINIUM_POWDER,
+          rate: 30,
+          requiredCount: 1,
+        },
+      ]
+
+      const summary = calculateFacilitySummary(requirements)
+
+      expect(summary).toHaveLength(2)
+
+      const furnace = summary.find(
+        (s) => s.facilityId === FacilityId.ITEM_PORT_FURNANCE_1
+      )
+      const grinder = summary.find(
+        (s) => s.facilityId === FacilityId.ITEM_PORT_GRINDER_1
+      )
+
+      expect(furnace?.totalCount).toBe(1)
+      expect(grinder?.totalCount).toBe(1)
+    })
+
+    it('空の配列の場合は空配列を返す', () => {
+      const summary = calculateFacilitySummary([])
+      expect(summary).toEqual([])
     })
   })
 })

@@ -1,6 +1,7 @@
 import { Calculator } from 'lucide-react'
 import { OreRateInput } from '@/components/OreRateInput'
 import { AvailableItemList } from '@/components/AvailableItemList'
+import { ProductionPlan } from '@/components/ProductionPlan'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <main className="space-y-8">
           <OreRateInput />
           <AvailableItemList />
+          <ProductionPlan />
         </main>
       </div>
     </div>
